@@ -37,4 +37,4 @@ jobs:
                   DD_BOT_TOKEN: ${{ secrets.DD_BOT_TOKEN }}
                   DD_BOT_SECRET: ${{ secrets.DD_BOT_SECRET }}
                   JOY_FEED_COUNT: ${{ secrets.JOY_FEED_COUNT }}
-                  SYNCURL: https://github.com/lqclight/jd_scripts/raw/master/jd_joy_feedPets.js
+                  SYNCURL: https://github.com/lqclight/jd_scripts/master/jd_joy_feedPets.js
