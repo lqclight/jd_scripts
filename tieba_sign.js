@@ -1,8 +1,15 @@
 const $httpClient = require('http');
+const $persistentStore = require('persistentStore');
 const $notification = require('notify');
 
-// 填入你的 BDUSS
-const BDUSS = "你的BDUSS";
+// 从存储中读取 BDUSS
+const BDUSS = $persistentStore.read('BDUSS');
+
+if (!BDUSS) {
+  $notification.post('贴吧签到', '', 'BDUSS 读取失败，请先获取 BDUSS');
+  $done({});
+  return;
+}
 
 // 获取贴吧列表
 const getTbs = () => {
