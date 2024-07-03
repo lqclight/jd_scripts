@@ -1,76 +1,49 @@
-const $httpClient = require('http');
-const $persistentStore = require('persistentStore');
-const $notification = require('notify');
+const APIKey = "TiebaCookie";
+$ = new API(APIKey, true);
+const CacheKey = `#${APIKey}`;
 
-// 从存储中读取 BDUSS
-const BDUSS = $persistentStore.read('BDUSS');
-
-if (!BDUSS) {
-  $notification.post('贴吧签到', '', 'BDUSS 读取失败，请先获取 BDUSS');
-  $done({});
-  return;
-}
-
-// 获取贴吧列表
-const getTbs = () => {
-  const url = 'http://tieba.baidu.com/dc/common/tbs';
-  const options = {
-    headers: {
-      'Cookie': `BDUSS=${BDUSS}`
-    }
-  };
-
-  return new Promise((resolve, reject) => {
-    $httpClient.get(url, options, (error, response, body) => {
-      if (error) {
-        reject(error);
-      } else {
-        const result = JSON.parse(body);
-        if (result && result.tbs) {
-          resolve(result.tbs);
-        } else {
-          reject(new Error('获取tbs失败'));
-        }
-      }
-    });
-  });
-};
-
-// 签到
-const sign = (tbs) => {
-  const url = 'http://c.tieba.baidu.com/c/c/forum/sign';
-  const data = `BDUSS=${BDUSS}&tbs=${tbs}`;
-  const options = {
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded'
-    }
-  };
-
-  return new Promise((resolve, reject) => {
-    $httpClient.post(url, options, data, (error, response, body) => {
-      if (error) {
-        reject(error);
-      } else {
-        const result = JSON.parse(body);
-        if (result && result.error_code === '0') {
-          resolve('签到成功');
-        } else {
-          reject(new Error(result.error_msg));
-        }
-      }
-    });
-  });
-};
-
-// 主函数
 const main = async () => {
   try {
-    const tbs = await getTbs();
-    const result = await sign(tbs);
-    $notification.post('贴吧签到', '', result);
+    const BDUSS = $.read(CacheKey);
+    if (!BDUSS) {
+      $.notify("贴吧签到", "", "BDUSS 读取失败，请先获取 BDUSS");
+      $.done({});
+      return;
+    }
+    
+    // 获取 tbs
+    const tbsUrl = 'http://tieba.baidu.com/dc/common/tbs';
+    const tbsHeaders = {
+      'Cookie': BDUSS
+    };
+    const tbsResp = await $.http.get({url: tbsUrl, headers: tbsHeaders});
+    const tbs = JSON.parse(tbsResp.body).tbs;
+    
+    if (!tbs) {
+      $.notify("贴吧签到", "", "获取 tbs 失败");
+      $.done({});
+      return;
+    }
+    
+    // 签到
+    const signUrl = 'http://c.tieba.baidu.com/c/c/forum/sign';
+    const signHeaders = {
+      'Content-Type': 'application/x-www-form-urlencoded'
+    };
+    const signBody = `BDUSS=${BDUSS}&tbs=${tbs}`;
+    const signResp = await $.http.post({url: signUrl, headers: signHeaders, body: signBody});
+    const signResult = JSON.parse(signResp.body);
+    
+    if (signResult.error_code === '0') {
+      $.notify("贴吧签到", "", "签到成功");
+    } else {
+      $.notify("贴吧签到", "", `签到失败: ${signResult.error_msg}`);
+    }
   } catch (error) {
-    $notification.post('贴吧签到', '', `失败: ${error.message}`);
+    $.notify("贴吧签到", "", `出现错误: ${error.message}`);
   }
+  
+  $.done({});
 };
 
 main();
